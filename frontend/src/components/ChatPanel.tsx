@@ -51,11 +51,11 @@ export default function ChatPanel() {
     window.addEventListener('open-chat', handleOpenChat);
 
     if (isOpen && activeTab === 'team' && !socketRef.current) {
-      const socket = io({
-        auth: {
-          token: authService.getToken()
-        }
-      });
+      authService.getToken().then(token => {
+const socket = io(import.meta.env.VITE_API_URL || '', {
+  auth: { token },
+  transports: ['websocket', 'polling'],
+});
 
       socket.on("connect", () => {
         setIsConnected(true);
@@ -93,6 +93,7 @@ export default function ChatPanel() {
       });
 
       socketRef.current = socket;
+      }).catch(err => console.error('Socket init error:', err));
     }
 
     return () => {
