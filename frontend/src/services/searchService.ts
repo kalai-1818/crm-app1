@@ -1,9 +1,4 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: '/api/search',
-  withCredentials: true
-});
+import { apiClient } from './apiClient.ts';
 
 export interface SearchResult {
   leads: any[];
@@ -13,7 +8,6 @@ export interface SearchResult {
 
 export const searchService = {
   globalSearch: async (query: string): Promise<SearchResult> => {
-    const response = await api.get(`/?q=${query}`);
-    return response.data;
+    return apiClient(`/api/search/?q=${encodeURIComponent(query)}`);
   }
 };
