@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Role check - requires lookup
+    function isAdmin() {
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.keys().size() >= 3 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.role in ['user', 'admin'];
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['name', 'email', 'owner', 'status', 'priority', 'value']) &&
+             data.name is string && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.owner is string && data.owner == request.auth.uid &&
+             data.status in ['New', 'Contacted', 'Converted', 'Rejected'] &&
+             data.priority in ['High', 'Medium', 'Low'] &&
+             data.value is number;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['title', 'owner', 'status', 'priority']) &&
+             data.title is string && data.title.size() <= 200 &&
+             data.owner is string && data.owner == request.auth.uid &&
+             data.status in ['Todo', 'In Progress', 'Done'] &&
+             data.priority in ['Low', 'Medium', 'High'];
+    }
+
+    function isValidActivity(data) {
+      return data.keys().hasAll(['lead', 'user', 'type', 'message']) &&
+             data.lead is string && data.user is string &&
+             data.user == request.auth.uid &&
+             data.type in ['CREATED', 'ASSIGNED', 'STATUS_UPDATED', 'PRIORITY_UPDATED', 'CONVERTED', 'REJECTED'] &&
+             data.message is string && data.message.size() <= 500;
+    }
+
+    function isValidNotification(data) {
+      return data.keys().hasAll(['recipient', 'type', 'title', 'message', 'isRead']) &&
+             data.recipient is string &&
+             data.type in ['LEAD_ASSIGNED', 'TASK_UPDATED', 'MESSAGE_RECEIVED', 'SYSTEM'] &&
+             data.title is string && data.message is string &&
+             data.isRead is bool;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['text', 'sender', 'userName']) &&
+             data.text is string && data.text.size() <= 1000 &&
+             data.sender is string && data.sender == request.auth.uid &&
+             data.userName is string;
+    }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && isOwner(userId) && isValidUser(incoming()) && incoming().role == 'user'; // Users can't make themselves admin
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin()) &&
+                    isValidUser(incoming()) &&
+                    (isAdmin() || incoming().role == existing().role); // Only admin can change role
+    }
+
+    match /leads/{leadId} {
+      allow get: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidLead(incoming());
+      allow update: if isSignedIn() && (existing().owner == request.auth.uid || isAdmin()) && isValidLead(incoming());
+      allow delete: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+    }
+
+    match /tasks/{taskId} {
+      allow get: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidTask(incoming());
+      allow update: if isSignedIn() && (existing().owner == request.auth.uid || isAdmin()) && isValidTask(incoming());
+      allow delete: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+    }
+
+    match /activities/{activityId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn(); // In a real app, should check lead ownership
+      allow create: if isSignedIn() && isValidActivity(incoming());
+      allow update, delete: if false; // Activities are immutable
+    }
+
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && resource.data.recipient == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.recipient == request.auth.uid;
+      allow create: if isSignedIn(); // Users can send notifications to each other (e.g. system notification)
+      allow update: if isSignedIn() && existing().recipient == request.auth.uid && 
+                    isValidNotification(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);
+      allow delete: if isSignedIn() && resource.data.recipient == request.auth.uid;
+    }
+
+    match /messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidMessage(incoming());
+      allow update, delete: if false; // Messages are immutable
+    }
+  }
+}

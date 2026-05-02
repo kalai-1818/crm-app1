@@ -1,0 +1,6 @@
+{
+  "name": "Remix: CRM Project Foundation",
+  "description": "A clean, production-ready foundation for a CRM application featuring an Express backend with MongoDB and a React frontend.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

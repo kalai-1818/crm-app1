@@ -1,0 +1,206 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Application user profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "User role" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "role"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Product or service offered",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "basePrice": { "type": "number" },
+        "description": { "type": "string" }
+      },
+      "required": ["name", "category", "basePrice"]
+    },
+    "Lead": {
+      "title": "Lead",
+      "description": "Sales lead or prospect",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Lead name" },
+        "email": { "type": "string", "format": "email", "description": "Lead email" },
+        "company": { "type": "string", "description": "Company name" },
+        "status": { "type": "string", "enum": ["New", "Contacted", "Converted", "Rejected"] },
+        "pipelineStage": { "type": "string", "enum": ["New", "Qualified", "Proposal Sent", "Negotiation", "Converted"] },
+        "value": { "type": "number", "description": "Estimated deal value" },
+        "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
+        "assignedAt": { "type": "string", "format": "date-time" },
+        "owner": { "type": "string", "description": "UID of the owner user" },
+        "activityLogs": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "action": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" },
+              "user": { "type": "string" }
+            }
+          }
+        },
+        "comments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "userId": { "type": "string" },
+              "userName": { "type": "string" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "owner", "status", "priority", "value"]
+    },
+    "Proposal": {
+      "title": "Proposal",
+      "description": "Generated proposal for a lead",
+      "type": "object",
+      "properties": {
+        "leadId": { "type": "string" },
+        "services": { "type": "array", "items": { "type": "string" } },
+        "pricing": { 
+          "type": "object",
+          "properties": {
+            "breakdown": { "type": "array", "items": { "type": "object" } },
+            "total": { "type": "number" }
+          }
+        },
+        "status": { "type": "string", "enum": ["Draft", "Sent", "Accepted", "Declined"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["leadId", "status"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Onboarded project from a converted lead",
+      "type": "object",
+      "properties": {
+        "leadId": { "type": "string" },
+        "name": { "type": "string" },
+        "progress": { "type": "number" },
+        "checklist": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "task": { "type": "string" },
+              "isCompleted": { "type": "boolean" },
+              "category": { "type": "string" }
+            }
+          }
+        },
+        "milestones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "date": { "type": "string", "format": "date-time" },
+              "isCompleted": { "type": "boolean" }
+            }
+          }
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "url": { "type": "string" },
+              "uploadedAt": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "status": { "type": "string", "enum": ["Active", "Completed", "On Hold"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["leadId", "name", "status"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Assigned task",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "Task title" },
+        "description": { "type": "string", "description": "Task description" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Todo", "In Progress", "Done"] },
+        "priority": { "type": "string", "enum": ["Low", "Medium", "High"] },
+        "owner": { "type": "string", "description": "UID of the owner user" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "owner", "status", "priority"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "Log of activities related to a lead",
+      "type": "object",
+      "properties": {
+        "lead": { "type": "string", "description": "Lead ID" },
+        "user": { "type": "string", "description": "User ID who performed the activity" },
+        "type": { "type": "string", "enum": ["CREATED", "ASSIGNED", "STATUS_UPDATED", "PRIORITY_UPDATED", "CONVERTED", "REJECTED"] },
+        "message": { "type": "string" },
+        "previousValue": { "type": "string" },
+        "newValue": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["lead", "user", "type", "message"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notification",
+      "type": "object",
+      "properties": {
+        "recipient": { "type": "string", "description": "Recipient User ID" },
+        "sender": { "type": "string", "description": "Sender User ID" },
+        "type": { "type": "string", "enum": ["LEAD_ASSIGNED", "TASK_UPDATED", "MESSAGE_RECEIVED", "SYSTEM"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "link": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["recipient", "type", "title", "message", "isRead"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "sender": { "type": "string", "description": "Sender User ID" },
+        "userName": { "type": "string", "description": "Sender user name" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "sender", "userName"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": { "schema": "User", "description": "User profiles" },
+    "services/{serviceId}": { "schema": "Service", "description": "Service catalog" },
+    "leads/{leadId}": { "schema": "Lead", "description": "CRM Leads" },
+    "proposals/{proposalId}": { "schema": "Proposal", "description": "Sales proposals" },
+    "projects/{projectId}": { "schema": "Project", "description": "Live projects" },
+    "tasks/{taskId}": { "schema": "Task", "description": "User tasks" },
+    "activities/{activityId}": { "schema": "Activity", "description": "Lead activities" },
+    "notifications/{notificationId}": { "schema": "Notification", "description": "User notifications" },
+    "messages/{messageId}": { "schema": "Message", "description": "Global chat messages" }
+  }
+}

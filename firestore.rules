@@ -1,0 +1,119 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // --- Validation Blueprints ---
+
+    function isValidService(data) {
+      return data.keys().hasAll(['name', 'category', 'basePrice']) &&
+             data.name is string && data.category is string && data.basePrice is number;
+    }
+
+    function isValidProposal(data) {
+      return data.keys().hasAll(['leadId', 'status']) &&
+             data.leadId is string && data.status in ['Draft', 'Sent', 'Accepted', 'Declined'];
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['leadId', 'name', 'status']) &&
+             data.leadId is string && data.name is string && data.status in ['Active', 'Completed', 'On Hold'];
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['name', 'email', 'role']) &&
+             data.name is string && data.email is string &&
+             data.role in ['user', 'admin', 'manager', 'sales', 'technical'];
+    }
+
+    function isValidLead(data) {
+      return data.keys().hasAll(['name', 'email', 'owner', 'status', 'priority', 'value']) &&
+             data.name is string && data.email is string &&
+             data.owner is string &&
+             data.status in ['New', 'Contacted', 'Converted', 'Rejected'] &&
+             data.priority in ['High', 'Medium', 'Low'] &&
+             data.value is number;
+    }
+
+    // --- Collections ---
+
+    match /services/{serviceId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /proposals/{proposalId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    match /projects/{projectId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if true; 
+      allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    match /leads/{leadId} {
+      allow get: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin() || resource.data.owner == 'system');
+      allow list: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (existing().owner == request.auth.uid || isAdmin());
+      allow delete: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isSignedIn() && (resource.data.owner == request.auth.uid || isAdmin());
+      allow write: if isSignedIn() && (incoming().owner == request.auth.uid || isAdmin());
+    }
+
+    match /activities/{activityId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.recipient == request.auth.uid;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && existing().recipient == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.recipient == request.auth.uid;
+    }
+
+    match /messages/{messageId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+  }
+}
