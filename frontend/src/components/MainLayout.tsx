@@ -56,16 +56,16 @@ export default function MainLayout() {
   useEffect(() => {
     fetchNotifications();
 
-    const socket = socketService.getSocket();
-    
-    socket.on("notification", (notification: any) => {
-      setNotifications(prev => [notification, ...prev]);
-      // Play a subtle sound or show a toast if needed
-    });
+    socketService.connect().then(socket => {
+  socket.on("notification", (notification: any) => {
+    setNotifications(prev => [notification, ...prev]);
+  });
+}).catch(err => console.warn('Socket connect error:', err));
 
-    return () => {
-      socket.off("notification");
-    };
+return () => {
+  const socket = socketService.getSocket();
+  if (socket) socket.off("notification");
+};
   }, []);
 
   useEffect(() => {
