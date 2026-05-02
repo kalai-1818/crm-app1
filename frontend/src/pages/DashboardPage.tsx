@@ -185,7 +185,7 @@ export default function DashboardPage() {
                    </div>
                  </div>
                ) : (
-                 <ResponsiveContainer width="100%" height="100%">
+                 <ResponsiveContainer width="100%" height={300}>
                    <AreaChart data={combinedTimeline}>
                    <defs>
                      <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
@@ -251,7 +251,7 @@ export default function DashboardPage() {
               <p className="text-stone-400 text-xs mb-8 leading-relaxed font-medium">Tracking {analytics?.summary?.convertedLeads || 0} successful nexus conversions across all active leads.</p>
               
               <div className="h-20 w-full mb-6">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={300}>
                    <BarChart data={leadChartData}>
                       <Bar dataKey="count" fill="#f97316" radius={[4, 4, 0, 0]} />
                    </BarChart>
@@ -351,7 +351,7 @@ function AnalyticCard({ label, value, icon, data, color }: { label: string, valu
           {icon}
         </div>
         <div className="w-20 h-10">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={data}>
               <Area 
                 type="monotone" 
