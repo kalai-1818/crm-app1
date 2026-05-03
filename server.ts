@@ -19,6 +19,7 @@ import analyticsRoutes from "./backend/routes/analytics.ts";
 import notificationRoutes from "./backend/routes/notifications.ts";
 import aiRoutes from "./backend/routes/ai.ts";
 import searchRoutes from "./backend/routes/search.ts";
+import { isProductionOriginAllowed } from "./backend/utils/httpCors.ts";
 
 async function startServer() {
   const app = express();
@@ -29,19 +30,16 @@ const PORT = Number(process.env.PORT) || 3000;
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cookieParser());
 
-  const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://0.0.0.0:3000",
-  ].filter(Boolean) as string[];
+  /** Set CORS_RELAX=true on Railway to echo any requesting Origin (ok for Bearer-token APIs; tighten later). */
+  const corsRelax = process.env.CORS_RELAX === "true";
 
   app.use(
     cors({
       origin: (origin, callback) => {
-        if (!origin || !isProd) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        callback(new Error(`CORS: ${origin} not allowed`));
+        if (!isProd) return callback(null, true);
+        if (corsRelax) return callback(null, true);
+        if (isProductionOriginAllowed(origin, "default")) return callback(null, true);
+        return callback(new Error(`CORS: ${origin || "blocked"}`));
       },
       credentials: true,
     })

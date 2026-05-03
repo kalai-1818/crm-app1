@@ -4,14 +4,23 @@ import Message from "./models/Message.ts";
 import User from "./models/User.ts";
 import Notification from "./models/Notification.ts";
 import { auth } from "./config/firebase.ts";
+import { isProductionOriginAllowed } from "./utils/httpCors.ts";
 
 const userRooms = new Map<string, string>();
 let globalIo: Server | null = null;
 
 export const setupSocket = (server: HttpServer) => {
+  const prod = process.env.NODE_ENV === "production";
+  const corsRelax = process.env.CORS_RELAX === "true";
+
   const io = new Server(server, {
     cors: {
-      origin: process.env.FRONTEND_URL || "*",
+      origin: (origin, callback) => {
+        if (!prod) return callback(null, true);
+        if (corsRelax) return callback(null, true);
+        if (!origin || isProductionOriginAllowed(origin, "default")) return callback(null, true);
+        return callback(new Error("socket CORS denied"));
+      },
       methods: ["GET", "POST"],
       credentials: true,
     },
