@@ -124,7 +124,7 @@ export default function LeadsPage() {
       } else {
         const lead = await leadService.createLead(newLead);
         setLeads([lead, ...leads]);
-        toast('Lead successfully synchronized with the nexus', 'success');
+        toast('Lead successfully synchronized with the nibble', 'success');
       }
       handleCloseModal();
     } catch (err) {
@@ -158,7 +158,7 @@ export default function LeadsPage() {
     <div className="max-w-7xl mx-auto space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-stone-200">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-stone-900">Lead <span className="text-orange-600">Nexus.</span></h1>
+          <h1 className="text-3xl font-black tracking-tight text-stone-900">Lead <span className="text-orange-600">nibble.</span></h1>
           <p className="text-stone-500 text-sm mt-1 font-medium tracking-tight">Managing {leads.length} active relationships across your network.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -196,7 +196,7 @@ export default function LeadsPage() {
             type="text" 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search nexus records..." 
+            placeholder="Search nibble records..." 
             className="w-full bg-stone-50 border border-stone-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold focus:outline-none focus:border-orange-500/50 transition-all"
           />
         </div>
@@ -304,7 +304,7 @@ export default function LeadsPage() {
           </div>
         ) : (
           <EmptyState 
-            title="Nexus Depleted." 
+            title="nibble Depleted." 
             description="No records match your scan parameters in the current system state."
             icon={<Target className="text-stone-200 w-8 h-8" />}
             action={
@@ -324,7 +324,7 @@ export default function LeadsPage() {
         onClose={() => setDeleteConfirmId(null)}
         onConfirm={() => deleteConfirmId && handleDeleteLead(deleteConfirmId)}
         title="Terminate Lead?"
-        message="This action will permanently erase the record from the nexus."
+        message="This action will permanently erase the record from the nibble."
         confirmLabel="Terminate"
       />
 
@@ -349,7 +349,7 @@ export default function LeadsPage() {
                 <div className="px-8 py-6 border-b border-stone-100 flex items-center justify-between bg-stone-50/30 sticky top-0 bg-white z-10">
                   <div>
                     <h2 className="text-xl font-black tracking-tight uppercase">
-                      {editingLead ? <><span className="text-stone-400">Operative</span> Profile.</> : <>Nexus <span className="text-orange-600">Registration.</span></>}
+                      {editingLead ? <><span className="text-stone-400">Operative</span> Profile.</> : <>nibble <span className="text-orange-600">Registration.</span></>}
                     </h2>
                     {editingLead && <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-1">Intelligence Protocol Active</p>}
                   </div>
@@ -380,7 +380,7 @@ export default function LeadsPage() {
                           onChange={e => setNewLead({...newLead, email: e.target.value})}
                           type="email" 
                           className="w-full bg-white border border-stone-200 rounded-xl py-3.5 px-5 text-sm font-bold focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/5 transition-all"
-                          placeholder="alex@nexus.io"
+                          placeholder="alex@nibble.io"
                         />
                       </div>
                     </div>
@@ -392,7 +392,7 @@ export default function LeadsPage() {
                           onChange={e => setNewLead({...newLead, company: e.target.value})}
                           type="text" 
                           className="w-full bg-white border border-stone-200 rounded-xl py-3.5 px-5 text-sm font-bold focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/5 transition-all"
-                          placeholder="Nexus Systems"
+                          placeholder="nibble Systems"
                         />
                       </div>
                       <div>

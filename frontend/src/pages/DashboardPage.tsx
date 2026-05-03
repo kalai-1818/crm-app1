@@ -76,7 +76,7 @@ export default function DashboardPage() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-stone-200">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-stone-900">Workspace <span className="text-orange-600">Intelligence.</span></h1>
-          <p className="text-stone-500 text-sm mt-1 font-medium tracking-tight">Real-time performance metrics and nexus activity logs.</p>
+          <p className="text-stone-500 text-sm mt-1 font-medium tracking-tight">Real-time performance metrics and nibble activity logs.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
@@ -248,7 +248,7 @@ export default function DashboardPage() {
                 <ArrowUpRight className="w-4 h-4 text-stone-500 group-hover:text-white transition-colors" />
               </div>
               <h3 className="font-black text-3xl tracking-tight mb-2">{(analytics?.summary?.conversionRate || 0).toFixed(1)}% <span className="text-stone-500 text-xl font-bold">avg</span></h3>
-              <p className="text-stone-400 text-xs mb-8 leading-relaxed font-medium">Tracking {analytics?.summary?.convertedLeads || 0} successful nexus conversions across all active leads.</p>
+              <p className="text-stone-400 text-xs mb-8 leading-relaxed font-medium">Tracking {analytics?.summary?.convertedLeads || 0} successful nibble conversions across all active leads.</p>
               
               <div className="h-20 w-full mb-6">
                 <ResponsiveContainer width="100%" height={300}>
@@ -277,7 +277,7 @@ export default function DashboardPage() {
             <div className="px-6 py-5 border-b border-stone-100 flex justify-between items-center bg-stone-50/20">
               <h2 className="text-sm font-bold flex items-center gap-2.5">
                 <Clock className="w-4 h-4 text-orange-600" />
-                Nexus Stream
+                nibble Stream
               </h2>
               <button className="text-[10px] font-black uppercase tracking-widest text-stone-400 hover:text-orange-600 transition-colors">History</button>
             </div>
@@ -316,7 +316,7 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <EmptyState 
-                  title="Silence in the Nexus." 
+                  title="Silence in the nibble." 
                   description="No activity recorded in the global context today."
                   icon={<MessageSquare className="w-8 h-8" />}
                 />
@@ -330,7 +330,7 @@ export default function DashboardPage() {
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             </div>
             <div className="space-y-4">
-              <HealthIndicator label="Nexus API" status="Online" color="bg-green-500" />
+              <HealthIndicator label="nibble API" status="Online" color="bg-green-500" />
               <HealthIndicator label="DB Performance" status="Active" color="bg-green-500" />
               <HealthIndicator label="Compute Engine" status="Optimized" color="bg-orange-500" />
             </div>

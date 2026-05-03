@@ -115,7 +115,7 @@ export default function ChatPage() {
       {/* Threads Sidebar */}
       <div className="w-80 border-r border-stone-100 flex flex-col bg-stone-50/50">
         <div className="p-6 border-b border-stone-100">
-          <h2 className="text-xl font-black tracking-tight text-stone-900">Nexus <span className="text-orange-600">Comms.</span></h2>
+          <h2 className="text-xl font-black tracking-tight text-stone-900">nibble <span className="text-orange-600">Comms.</span></h2>
           <div className="relative mt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
             <input 
@@ -130,7 +130,7 @@ export default function ChatPage() {
             <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-orange-900/20">#</div>
             <div className="flex-1 text-left">
               <p className="text-xs font-black text-stone-900 tracking-tight">global_workspace</p>
-              <p className="text-[10px] text-orange-600 font-bold uppercase tracking-widest mt-0.5">Active Nexus</p>
+              <p className="text-[10px] text-orange-600 font-bold uppercase tracking-widest mt-0.5">Active nibble</p>
             </div>
             <div className="w-2 h-2 rounded-full bg-orange-600 animate-pulse" />
           </button>
@@ -241,7 +241,7 @@ export default function ChatPage() {
                 ))}
               </div>
               <span className="text-[9px] font-black text-orange-600 uppercase tracking-widest opacity-60">
-                Nexus processing input...
+                nibble processing input...
               </span>
             </motion.div>
           )}
@@ -277,7 +277,7 @@ export default function ChatPage() {
           </form>
           <div className="mt-4 flex items-center justify-center gap-4">
              <div className="h-[1px] w-12 bg-stone-100" />
-             <p className="text-[8px] font-black text-stone-300 uppercase tracking-[0.4em]">Secure Nexus Protocol v1.4</p>
+             <p className="text-[8px] font-black text-stone-300 uppercase tracking-[0.4em]">Secure nibble Protocol v1.4</p>
              <div className="h-[1px] w-12 bg-stone-100" />
           </div>
         </div>

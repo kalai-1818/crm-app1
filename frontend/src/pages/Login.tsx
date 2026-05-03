@@ -38,7 +38,7 @@ export default function Login() {
             <LogIn className="text-orange-600 w-8 h-8" />
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight mb-2">Welcome Back</h1>
-          <p className="text-[#57534E]">Sign in to access your NexusCRM workspace</p>
+          <p className="text-[#57534E]">Sign in to access your nibbleCRM workspace</p>
         </div>
 
         {error && (

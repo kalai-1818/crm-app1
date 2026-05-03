@@ -25,7 +25,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
 
   const handleSync = () => {
-    toast("Nexus profile synchronized successfully", "success");
+    toast("nibble profile synchronized successfully", "success");
   };
 
   const settingsTabs = [
@@ -41,8 +41,8 @@ export default function SettingsPage() {
     <div className="max-w-6xl mx-auto space-y-10">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-stone-200">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-stone-900">Nexus <span className="text-orange-600">Preferences.</span></h1>
-          <p className="text-stone-500 text-sm mt-1 font-medium tracking-tight">System configuration and security management for your nexus workspace.</p>
+          <h1 className="text-3xl font-black tracking-tight text-stone-900">nibble <span className="text-orange-600">Preferences.</span></h1>
+          <p className="text-stone-500 text-sm mt-1 font-medium tracking-tight">System configuration and security management for your nibble workspace.</p>
         </div>
       </header>
 
@@ -145,7 +145,7 @@ export default function SettingsPage() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <h3 className="text-sm font-black text-stone-900 uppercase tracking-tight">Multi-Factor Authentication</h3>
-                                <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mt-1">Enhance your nexus security layer</p>
+                                <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest mt-1">Enhance your nibble security layer</p>
                             </div>
                             <div className="w-12 h-6 bg-stone-200 rounded-full relative cursor-pointer">
                                 <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm" />
@@ -177,9 +177,9 @@ export default function SettingsPage() {
                 <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-stone-100 shadow-inner">
                    <Cloud className="w-8 h-8 text-stone-200" />
                 </div>
-                <h3 className="text-xl font-black tracking-tight text-stone-900 mb-2">Nexus Node Locked.</h3>
+                <h3 className="text-xl font-black tracking-tight text-stone-900 mb-2">nibble Node Locked.</h3>
                 <p className="text-[9px] font-black uppercase tracking-[0.3em] text-stone-400 max-w-[280px] mx-auto leading-relaxed">
-                  Advanced nexus interface protocols available in Enterprise Subscription tiers.
+                  Advanced nibble interface protocols available in Enterprise Subscription tiers.
                 </p>
                 <button className="mt-8 px-8 py-3 bg-stone-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-orange-600 transition-all shadow-lg shadow-stone-900/10">Upgrade Matrix</button>
               </div>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
           toast("Account termination protocol initiated", "error");
         }}
         title="Terminate Account?"
-        message="This will permanently delete your identity and all data in the nexus. This action is irreversible."
+        message="This will permanently delete your identity and all data in the nibble. This action is irreversible."
         confirmLabel="Terminate Identity"
       />
     </div>

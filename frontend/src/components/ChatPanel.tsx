@@ -31,7 +31,7 @@ export default function ChatPanel() {
   const [aiMessages, setAiMessages] = useState<any[]>([
     { 
       role: 'model', 
-      parts: [{ text: "Nexus Intelligence online. How can I facilitate your CRM operations today?" }],
+      parts: [{ text: "nibble Intelligence online. How can I facilitate your CRM operations today?" }],
       createdAt: new Date().toISOString()
     }
   ]);
@@ -208,7 +208,7 @@ const socket = io(import.meta.env.VITE_API_URL || '', {
               </div>
               <div>
                 <h3 className="font-bold text-sm tracking-tight line-clamp-1">
-                  {activeTab === 'team' ? <>Team <span className="text-orange-600">Sync.</span></> : <>Nexus <span className="text-orange-600">Intelligence.</span></>}
+                  {activeTab === 'team' ? <>Team <span className="text-orange-600">Sync.</span></> : <>nibble <span className="text-orange-600">Intelligence.</span></>}
                 </h3>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${activeTab === 'ai' ? 'bg-orange-500 animate-pulse' : (isConnected ? 'bg-green-500' : 'bg-red-500')}`} />
@@ -306,7 +306,7 @@ const socket = io(import.meta.env.VITE_API_URL || '', {
                   >
                     {!isMe && (
                       <span className="text-[10px] font-black text-orange-600 mb-1.5 ml-1 flex items-center gap-1 uppercase tracking-widest">
-                        <Bot className="w-2.5 h-2.5" /> Nexus Intelligence
+                        <Bot className="w-2.5 h-2.5" /> nibble Intelligence
                       </span>
                     )}
                     <div className={`max-w-[90%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
@@ -343,7 +343,7 @@ const socket = io(import.meta.env.VITE_API_URL || '', {
               required
               value={inputValue}
               onChange={handleInputChange}
-              placeholder={activeTab === 'team' ? "Message Nexus team..." : "Query Nexus Intelligence..."}
+              placeholder={activeTab === 'team' ? "Message nibble team..." : "Query nibble Intelligence..."}
               className="w-full bg-[#FAFAF9] border border-[#E7E5E4] rounded-2xl py-4 pl-6 pr-14 text-sm focus:outline-none focus:border-orange-500 transition-all font-medium"
             />
             <button 

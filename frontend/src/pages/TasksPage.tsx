@@ -160,7 +160,7 @@ export default function TasksPage() {
             type="text" 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search nexus tasks..." 
+            placeholder="Search nibble tasks..." 
             className="w-full bg-stone-50 border border-stone-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold focus:outline-none focus:border-orange-500/50 transition-all"
           />
         </div>
@@ -187,7 +187,7 @@ export default function TasksPage() {
         </div>
       ) : tasks.length === 0 ? (
         <EmptyState 
-           title="No active tasks in the nexus." 
+           title="No active tasks in the nibble." 
            description="Your work pipeline is currently optimized. Create a new task to begin tracking execution."
            icon={<CheckSquare className="w-8 h-8" />}
            action={
@@ -309,7 +309,7 @@ export default function TasksPage() {
                     value={newTask.description}
                     onChange={e => setNewTask({...newTask, description: e.target.value})}
                     className="w-full bg-white border border-stone-200 rounded-xl py-3.5 px-5 text-sm font-bold focus:outline-none focus:border-orange-500 transition-all min-h-[100px] resize-none font-sans"
-                    placeholder="Provide detailed context for this nexus execution..."
+                    placeholder="Provide detailed context for this nibble execution..."
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">

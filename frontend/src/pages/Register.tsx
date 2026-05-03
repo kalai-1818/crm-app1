@@ -38,7 +38,7 @@ export default function Register() {
           <div className="w-16 h-16 bg-orange-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <UserPlus className="text-orange-600 w-8 h-8" />
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight mb-2">Join NexusCRM</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight mb-2">Join nibbleCRM</h1>
           <p className="text-[#57534E]">Start building your customer ecosystem today</p>
         </div>
 
@@ -75,7 +75,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-[#FAFAF9] border border-[#E7E5E4] rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                placeholder="alex@nexus.com"
+                placeholder="alex@nibble.com"
               />
             </div>
           </div>

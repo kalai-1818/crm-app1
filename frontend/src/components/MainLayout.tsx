@@ -161,7 +161,7 @@ return () => {
                 exit={{ opacity: 0, x: -10 }}
                 className="ml-3 z-10 whitespace-nowrap"
               >
-                <p className="font-black text-lg tracking-tight leading-none">Nexus<span className="text-orange-500">Workspace</span></p>
+                <p className="font-black text-lg tracking-tight leading-none">nibble<span className="text-orange-500">Workspace</span></p>
                 <p className="text-[10px] font-bold text-stone-500 uppercase tracking-widest mt-1">Free Tier</p>
               </motion.div>
             )}
