@@ -31,7 +31,8 @@ const ICON_MAP = {
 };
 
 export function LeadTimeline({ activities }: { activities: Activity[] }) {
-  if (!activities.length) {
+  const list = Array.isArray(activities) ? activities : [];
+  if (!list.length) {
     return (
       <div className="py-12 text-center">
         <Clock className="w-8 h-8 text-stone-200 mx-auto mb-3" />
@@ -42,7 +43,7 @@ export function LeadTimeline({ activities }: { activities: Activity[] }) {
 
   return (
     <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:-translate-x-px before:bg-stone-100">
-      {activities.map((activity, index) => (
+      {list.map((activity, index) => (
         <motion.div 
           key={activity._id}
           initial={{ opacity: 0, x: -10 }}

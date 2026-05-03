@@ -24,6 +24,7 @@ import { Skeleton, TableRowSkeleton } from "../components/ui/Skeleton.tsx";
 import { EmptyState } from "../components/ui/EmptyState.tsx";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog.tsx";
 import { LeadTimeline } from "../components/LeadTimeline.tsx";
+import { useCrmStore } from "../stores/useCrmStore.ts";
 
 const STATUS_COLORS: any = {
   'New': 'bg-blue-50 text-blue-700 border-blue-100',
@@ -38,11 +39,22 @@ const PRIORITY_COLORS: any = {
   'Low': 'bg-stone-50 text-stone-300 border-stone-100'
 };
 
+const STATUSES = ['New', 'Contacted', 'Converted', 'Rejected'] as const;
+
 export default function LeadsPage() {
-  const [leads, setLeads] = useState<any[]>([]);
+  const leads = useCrmStore((s) => s.leads);
+  const isLoading = useCrmStore((s) => s.loading);
+  const error = useCrmStore((s) => s.error);
+  const fetchLeads = useCrmStore((s) => s.fetchLeads);
+  const clearError = useCrmStore((s) => s.clearError);
+  const prependLead = useCrmStore((s) => s.prependLead);
+  const replaceLead = useCrmStore((s) => s.replaceLead);
+  const removeLead = useCrmStore((s) => s.removeLead);
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<(typeof STATUSES)[number] | 'All'>('All');
+  const [sortDesc, setSortDesc] = useState(true);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLead, setEditingLead] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
@@ -55,8 +67,8 @@ export default function LeadsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchLeads();
-  }, []);
+    void fetchLeads();
+  }, [fetchLeads]);
 
   const fetchActivities = async (id: string) => {
     setIsLoadingActivities(true);
@@ -90,40 +102,54 @@ export default function LeadsPage() {
     setNewLead({ name: '', email: '', company: '', status: 'New', value: 0 });
   };
 
-  const fetchLeads = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await leadService.getLeads();
-      setLeads(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load leads");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const filteredLeads = [...(leads ?? [])]
+    .filter((lead) => {
+      if (statusFilter !== 'All' && String(lead.status || '') !== statusFilter) return false;
+      const search = searchQuery.toLowerCase();
+      const name = String(lead.name || '').toLowerCase();
+      const email = String(lead.email || '').toLowerCase();
+      const company = String(lead.company || '').toLowerCase();
+      return !search || name.includes(search) || email.includes(search) || company.includes(search);
+    })
+    .sort((a, b) => {
+      const da = new Date(a.createdAt || a.updatedAt || 0).getTime();
+      const db = new Date(b.createdAt || b.updatedAt || 0).getTime();
+      return sortDesc ? db - da : da - db;
+    });
 
-  const filteredLeads = leads.filter(lead => {
-    const search = searchQuery.toLowerCase();
-    return (
-      lead.name.toLowerCase().includes(search) || 
-      lead.email.toLowerCase().includes(search) || 
-      (lead.company && lead.company.toLowerCase().includes(search))
-    );
-  });
+  const exportCsv = () => {
+    const headers = ["name", "email", "company", "status", "pipeline_stage", "value", "priority"];
+    const rows = filteredLeads.map((l: any) => [
+      `"${String(l.name || '').replace(/"/g, '""')}"`,
+      `"${String(l.email || '').replace(/"/g, '""')}"`,
+      `"${String(l.company || '').replace(/"/g, '""')}"`,
+      `"${String(l.status || '')}"`,
+      `"${String(l.pipelineStage || '')}"`,
+      String(l.value ?? ''),
+      `"${String(l.priority || '')}"`,
+    ].join(","));
+    const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Exported filtered leads CSV", "success");
+  };
 
   const handleCreateOrUpdateLead = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
       if (editingLead) {
-        const updated = await leadService.updateLead(editingLead._id, newLead);
-        setLeads(leads.map(l => l._id === editingLead._id ? updated : l));
+        const lid = editingLead._id || editingLead.id;
+        const updated = await leadService.updateLead(lid, newLead);
+        replaceLead(updated);
         toast('Lead matrix updated successfully', 'success');
       } else {
         const lead = await leadService.createLead(newLead);
-        setLeads([lead, ...leads]);
+        prependLead(lead);
         toast('Lead successfully synchronized with the nibble', 'success');
       }
       handleCloseModal();
@@ -137,7 +163,7 @@ export default function LeadsPage() {
   const handleUpdateStatus = async (id: string, status: string) => {
     try {
       const updated = await leadService.updateLead(id, { status });
-      setLeads(leads.map(l => l._id === id ? updated : l));
+      replaceLead(updated);
       toast(`Status updated to ${status}`, 'success');
     } catch (err) {
       toast('Status update failed', 'error');
@@ -147,7 +173,7 @@ export default function LeadsPage() {
   const handleDeleteLead = async (id: string) => {
     try {
       await leadService.deleteLead(id);
-      setLeads(leads.filter(l => l._id !== id));
+      removeLead(id);
       toast('Lead record terminated successfully', 'success');
     } catch (err) {
       toast('Protocol failure during termination', 'error');
@@ -159,11 +185,16 @@ export default function LeadsPage() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-stone-200">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-stone-900">Lead <span className="text-orange-600">nibble.</span></h1>
-          <p className="text-stone-500 text-sm mt-1 font-medium tracking-tight">Managing {leads.length} active relationships across your network.</p>
+          <p className="text-stone-500 text-sm mt-1 font-medium tracking-tight">Managing {(leads ?? []).length} active relationships across your network.</p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-stone-50 transition-all flex items-center gap-2 shadow-sm">
-            <MoreHorizontal className="w-3.5 h-3.5" /> Export
+          <button
+            type="button"
+            onClick={() => filteredLeads.length && exportCsv()}
+            disabled={!filteredLeads.length}
+            className="px-4 py-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-stone-50 transition-all flex items-center gap-2 shadow-sm disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <MoreHorizontal className="w-3.5 h-3.5" /> Export CSV
           </button>
           <button 
             onClick={() => setIsModalOpen(true)}
@@ -178,13 +209,15 @@ export default function LeadsPage() {
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-xl flex items-center justify-between text-xs font-bold"
+          className="bg-red-50 border border-red-200 text-red-600 px-6 py-4 rounded-xl flex items-center justify-between text-xs font-bold gap-4 flex-wrap"
         >
-          <div className="flex items-center gap-3">
-            <X className="w-4 h-4" onClick={() => setError(null)} />
-            {error}
+          <div className="flex items-center gap-3 min-w-0">
+            <button type="button" onClick={clearError} className="p-1 rounded hover:bg-red-100 shrink-0" aria-label="Dismiss error">
+              <X className="w-4 h-4" />
+            </button>
+            <span className="break-words">{error}</span>
           </div>
-          <button onClick={fetchLeads} className="underline uppercase tracking-widest">Retry Sync</button>
+          <button type="button" onClick={() => { clearError(); void fetchLeads(); }} className="underline uppercase tracking-widest whitespace-nowrap">Retry Sync</button>
         </motion.div>
       )}
 
@@ -200,12 +233,27 @@ export default function LeadsPage() {
             className="w-full bg-stone-50 border border-stone-100 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold focus:outline-none focus:border-orange-500/50 transition-all"
           />
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
-          <button className="flex-1 md:flex-none h-10 border border-stone-200 px-4 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500 hover:bg-stone-50 transition-colors">
-            <Filter className="w-3.5 h-3.5" /> All Status
-          </button>
-          <button className="flex-1 md:flex-none h-10 border border-stone-200 px-4 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500 hover:bg-stone-50 transition-colors">
-             Sort: Newest
+        <div className="flex gap-2 w-full md:w-auto relative">
+          <div className="relative flex-1 md:flex-none min-w-0 md:max-w-[220px]">
+            <Filter className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 z-10" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              aria-label="Filter by status"
+              className="h-10 w-full border border-stone-200 pl-10 pr-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-stone-600 hover:bg-stone-50 bg-white cursor-pointer shadow-sm appearance-none"
+            >
+              <option value="All">All statuses</option>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSortDesc(!sortDesc)}
+            className="flex-1 md:flex-none h-10 border border-stone-200 px-4 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-stone-500 hover:bg-stone-50 transition-colors bg-white"
+          >
+            Sort: {sortDesc ? 'Newest' : 'Oldest'}
           </button>
         </div>
       </div>
@@ -239,13 +287,13 @@ export default function LeadsPage() {
                     layout
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    key={lead._id} 
+                    key={lead._id || lead.id} 
                     className="group hover:bg-stone-50/50 transition-colors"
                   >
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-stone-900 text-white flex items-center justify-center text-xs font-black shadow-lg shadow-stone-900/10 transition-transform group-hover:scale-105">
-                          {lead.name.charAt(0)}
+                          {(lead.name || '?').charAt(0)}
                         </div>
                         <div className="overflow-hidden">
                           <p className="font-bold text-sm tracking-tight truncate">{lead.name}</p>

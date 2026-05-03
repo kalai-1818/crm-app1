@@ -5,6 +5,7 @@ import Proposal from '../models/Proposal.ts';
 import Project from '../models/Project.ts';
 import { sendNotification } from './notificationController.ts';
 import { calculatePriority, getAutoAssignee, logActivity } from '../utils/intelligence.ts';
+import { canonicalPipelineStage, statusFromPipelineStage } from '../constants/pipeline.ts';
 
 export const getLeads = async (req: any, res: Response) => {
   try {
@@ -15,7 +16,10 @@ export const getLeads = async (req: any, res: Response) => {
 
     const total = allLeads.length;
     const start = (page - 1) * limit;
-    const paginatedLeads = allLeads.slice(start, start + limit);
+    const paginatedLeads = allLeads.slice(start, start + limit).map((l: any) => ({
+      ...l,
+      pipelineStage: canonicalPipelineStage(l),
+    }));
 
     res.json({
       leads: paginatedLeads,
@@ -38,12 +42,17 @@ export const createLead = async (req: any, res: Response) => {
     // Smart Priority logic
     const priority = calculatePriority(value || 0, status || 'New');
 
+    const initialStage =
+      typeof req.body.pipelineStage === 'string'
+        ? canonicalPipelineStage({ pipelineStage: req.body.pipelineStage, status })
+        : 'Lead';
+
     const lead = await Lead.create({
       name,
       email,
       company,
       status: status || 'New',
-      pipelineStage: 'New',
+      pipelineStage: initialStage,
       value: value || 0,
       priority,
       assignedAt: new Date(),
@@ -99,16 +108,26 @@ export const updateLead = async (req: any, res: Response) => {
     if (!oldLead) return res.status(404).json({ message: 'Lead not found' });
 
     const changes: any = {};
+
+    if (typeof req.body.pipelineStage === 'string') {
+      const ps = canonicalPipelineStage({ pipelineStage: req.body.pipelineStage, status: oldLead.status });
+      req.body.pipelineStage = ps;
+      req.body.status = statusFromPipelineStage(ps);
+    }
+
     if (req.body.status && req.body.status !== oldLead.status) {
       changes.status = { from: oldLead.status, to: req.body.status };
-      
-      if (req.body.status === 'Converted') req.body.pipelineStage = 'Converted';
-      else if (req.body.status === 'Contacted') req.body.pipelineStage = 'Qualified';
+      if (!req.body.pipelineStage) {
+        req.body.pipelineStage = canonicalPipelineStage({
+          pipelineStage: oldLead.pipelineStage,
+          status: req.body.status,
+        });
+      }
     }
 
     if (req.body.value || req.body.status) {
       req.body.priority = calculatePriority(
-        req.body.value || oldLead.value,
+        req.body.value ?? oldLead.value,
         req.body.status || oldLead.status
       );
     }
@@ -118,6 +137,8 @@ export const updateLead = async (req: any, res: Response) => {
       req.body,
       { new: true, runValidators: true }
     ) as any;
+
+    const normalized = lead ? { ...lead, pipelineStage: canonicalPipelineStage(lead) } : lead;
 
     if (changes.status?.to === 'Converted') {
       await Project.create({
@@ -147,7 +168,7 @@ export const updateLead = async (req: any, res: Response) => {
       });
     }
 
-    res.json(lead);
+    res.json(normalized || lead);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

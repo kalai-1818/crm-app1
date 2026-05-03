@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import { Request, Response, NextFunction } from 'express';
+import { PIPELINE_STAGES } from '../constants/pipeline.ts';
 
 export const validate = (schema: Joi.ObjectSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -30,9 +31,24 @@ export const leadSchemas = {
     email: Joi.string().email().required(),
     company: Joi.string().allow('').optional(),
     status: Joi.string().valid('New', 'Contacted', 'Converted', 'Rejected').optional(),
+    pipelineStage: Joi.string().valid(...PIPELINE_STAGES).optional(),
     value: Joi.number().min(0).optional(),
     services: Joi.array().optional(),
-  }).options({ allowUnknown: true })
+  }).options({ allowUnknown: true }),
+
+  /** Partial updates — required for kanban moves and PATCH-style edits */
+  update: Joi.object({
+    name: Joi.string().min(1),
+    email: Joi.string().email(),
+    company: Joi.string().allow(''),
+    status: Joi.string().valid('New', 'Contacted', 'Converted', 'Rejected'),
+    pipelineStage: Joi.string().valid(...PIPELINE_STAGES),
+    value: Joi.number().min(0),
+    priority: Joi.string().valid('High', 'Medium', 'Low'),
+    services: Joi.array(),
+  })
+    .min(1)
+    .unknown(false),
 };
 
 export const taskSchemas = {

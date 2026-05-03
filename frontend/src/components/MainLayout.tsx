@@ -30,9 +30,12 @@ import { notificationService } from "../services/notificationService.ts";
 import { socketService } from "../services/socketService.ts";
 import { searchService, SearchResult } from "../services/searchService.ts";
 import ChatPanel from "./ChatPanel.tsx";
+import { useMediaQuery } from "../hooks/useMediaQuery.ts";
 
 export default function MainLayout() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const isMdUp = useMediaQuery("(min-width: 768px)");
+  const [desktopSidebarWide, setDesktopSidebarWide] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,6 +46,15 @@ export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const user = authService.getUser();
+
+  const sidebarLabelsVisible = !isMdUp || desktopSidebarWide;
+  const closeMobileNav = () => {
+    if (!isMdUp) setMobileNavOpen(false);
+  };
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   const fetchNotifications = async () => {
     try {
@@ -140,13 +152,30 @@ return () => {
   };
 
   return (
-    <div className="flex h-screen bg-stone-50 text-stone-900 font-sans selection:bg-orange-100 selection:text-orange-900">
+    <div className="flex min-h-0 min-h-[100dvh] h-[100dvh] bg-stone-50 text-stone-900 font-sans selection:bg-orange-100 selection:text-orange-900 overflow-hidden">
+      <AnimatePresence>
+        {!isMdUp && mobileNavOpen && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-stone-900/45 backdrop-blur-[2px] md:hidden"
+            onClick={() => setMobileNavOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
       <motion.aside 
         initial={false}
-        animate={{ width: isSidebarOpen ? 260 : 72 }}
-        transition={{ type: "spring", damping: 20, stiffness: 100 }}
-        className="h-full bg-stone-950 text-white flex flex-col relative z-[60] shadow-2xl overflow-hidden"
+        animate={{ width: isMdUp ? (desktopSidebarWide ? 260 : 72) : 260 }}
+        transition={{ type: "spring", damping: 22, stiffness: 120 }}
+        className={`flex flex-col bg-stone-950 text-white z-[75] shrink-0 shadow-xl overflow-hidden
+          fixed inset-y-0 left-0 h-full md:h-screen md:static md:inset-auto
+          transition-[transform] duration-300 md:transition-none ease-out md:translate-x-0 md:z-[60]
+          ${!isMdUp ? (mobileNavOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"}
+        `}
       >
         {/* Sidebar Header / Workspace Switcher */}
         <div className="p-4 flex items-center h-20 border-b border-white/5 relative overflow-hidden group">
@@ -154,7 +183,7 @@ return () => {
             <Users className="text-white w-6 h-6" />
           </div>
           <AnimatePresence mode="wait">
-            {isSidebarOpen && (
+            {sidebarLabelsVisible && (
               <motion.div 
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -178,6 +207,7 @@ return () => {
               <Link
                 key={item.label}
                 to={item.path}
+                onClick={closeMobileNav}
                 className={`flex items-center h-11 px-3 rounded-lg transition-all group relative ${
                   isActive 
                     ? "text-white" 
@@ -189,7 +219,7 @@ return () => {
                 </div>
                 
                 <AnimatePresence>
-                  {isSidebarOpen && (
+                  {sidebarLabelsVisible && (
                     <motion.span 
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -225,6 +255,7 @@ return () => {
         <div className="p-3 border-t border-white/5 space-y-1">
           <Link 
             to="/settings"
+            onClick={closeMobileNav}
             className={`flex items-center h-11 px-3 rounded-lg transition-all group relative ${
               location.pathname === "/settings" 
                 ? "text-white" 
@@ -233,7 +264,7 @@ return () => {
           >
             <SettingsIcon className={`w-5 h-5 shrink-0 z-10 ${location.pathname === "/settings" ? "text-orange-500" : ""}`} />
             <AnimatePresence>
-              {isSidebarOpen && (
+              {sidebarLabelsVisible && (
                 <motion.span 
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -258,7 +289,7 @@ return () => {
           >
             <LogOut className="w-5 h-5 shrink-0 group-hover:scale-110 transition-transform" />
             <AnimatePresence>
-              {isSidebarOpen && (
+              {sidebarLabelsVisible && (
                 <motion.span 
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -272,20 +303,30 @@ return () => {
           </button>
         </div>
 
-        {/* Collapse Toggle */}
+        {/* Desktop collapse */}
         <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="absolute -right-3 top-24 w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform z-[70] border-2 border-stone-950"
+          type="button"
+          aria-label={desktopSidebarWide ? 'Collapse sidebar' : 'Expand sidebar'}
+          onClick={() => setDesktopSidebarWide(!desktopSidebarWide)}
+          className="hidden md:flex absolute -right-3 top-24 w-6 h-6 bg-orange-600 rounded-full items-center justify-center text-white shadow-xl hover:scale-110 transition-transform z-[80] border-2 border-stone-950"
         >
-          {isSidebarOpen ? <ChevronLeft className="w-3 h-3" /> : <Menu className="w-3 h-3" />}
+          {desktopSidebarWide ? <ChevronLeft className="w-3 h-3" /> : <Menu className="w-3 h-3" />}
         </button>
       </motion.aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative md:rounded-none rounded-none">
         {/* Top Navbar */}
-        <header className="h-16 bg-white border-b border-stone-200 flex items-center justify-between px-6 z-50 shadow-sm shadow-stone-900/5">
-          <div className="flex items-center gap-4 flex-1">
+        <header className="min-h-[4rem] h-16 bg-white border-b border-stone-200 flex items-center justify-between px-4 sm:px-6 gap-3 z-[50] shrink-0 shadow-sm shadow-stone-900/5">
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-xl text-stone-600 hover:bg-stone-100 border border-stone-200/80 shrink-0"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             <div className="relative max-w-sm w-full hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
               <input 

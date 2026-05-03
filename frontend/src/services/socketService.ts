@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { authService } from './authService.ts';
+import { getApiOrigin } from './apiClient.ts';
 
 let socket: Socket | null = null;
 
@@ -7,7 +8,7 @@ export const socketService = {
   async connect() {
     if (socket?.connected) return socket;
     const token = await authService.getToken();
-    socket = io(import.meta.env.VITE_API_URL || '', {
+    socket = io(getApiOrigin(), {
       auth: { token },
       transports: ['websocket', 'polling'],
     });

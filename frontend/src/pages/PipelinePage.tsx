@@ -1,120 +1,263 @@
-import React, { useState, useEffect } from "react";
-import { leadService } from "../services/leadService.ts";
-import { Kanban, Filter, Plus, Search, MoreVertical, Clock, Target } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
-
-const STAGES = ["New", "Qualified", "Proposal Sent", "Negotiation", "Converted"];
+import React, { useEffect, useState } from 'react';
+import {
+  Kanban,
+  Plus,
+  Search,
+  RefreshCw,
+  SlidersHorizontal,
+  AlertCircle,
+} from 'lucide-react';
+import { motion } from 'motion/react';
+import { PipelineBoard } from '../components/pipeline/PipelineBoard.tsx';
+import { PipelineLeadModal, type DraftLead } from '../components/pipeline/PipelineLeadModal.tsx';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog.tsx';
+import { useToast } from '../components/ui/Toast.tsx';
+import { useCrmStore, type PipelineStageId } from '../stores/useCrmStore.ts';
+import { leadService } from '../services/leadService.ts';
 
 export default function PipelinePage() {
-  const [leads, setLeads] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const fetchLeads = useCrmStore((s) => s.fetchLeads);
+  const leads = useCrmStore((s) => s.leads);
+  const loading = useCrmStore((s) => s.loading);
+  const error = useCrmStore((s) => s.error);
+  const usingFallback = useCrmStore((s) => s.usingFallback);
+  const clearError = useCrmStore((s) => s.clearError);
+  const prependLead = useCrmStore((s) => s.prependLead);
+  const replaceLead = useCrmStore((s) => s.replaceLead);
+  const removeLead = useCrmStore((s) => s.removeLead);
 
-  const fetchLeads = async () => {
+  const { toast } = useToast();
+
+  const [query, setQuery] = useState('');
+  const [stageScope, setStageScope] = useState<PipelineStageId | 'all'>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  const [leadModalOpen, setLeadModalOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [submittingModal, setSubmittingModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+
+  useEffect(() => {
+    void fetchLeads();
+  }, [fetchLeads]);
+
+  const openCreate = () => {
+    setEditing(null);
+    setLeadModalOpen(true);
+  };
+
+  const openEdit = (lead: any) => {
+    setEditing(lead);
+    setLeadModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setLeadModalOpen(false);
+    setEditing(null);
+  };
+
+  const handleModalSubmit = async (draft: DraftLead) => {
+    setSubmittingModal(true);
     try {
-      const data = await leadService.getLeads();
-      setLeads(data);
-    } catch (err) {
-      console.error(err);
+      if (editing) {
+        const id = editing._id || editing.id;
+        const payload = {
+          name: draft.name,
+          email: draft.email,
+          company: draft.company,
+          value: draft.value,
+          pipelineStage: draft.pipelineStage,
+        };
+        const updated = await leadService.updateLead(id, payload);
+        replaceLead(updated);
+        toast('Lead updated', 'success');
+      } else {
+        const created = await leadService.createLead({
+          name: draft.name,
+          email: draft.email,
+          company: draft.company || undefined,
+          value: draft.value,
+          pipelineStage: draft.pipelineStage,
+        });
+        prependLead(created);
+        toast('Lead created', 'success');
+      }
+      closeModal();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not save lead', 'error');
     } finally {
-      setLoading(false);
+      setSubmittingModal(false);
     }
   };
 
-  useEffect(() => {
-    fetchLeads();
-  }, []);
-
-  const getLeadsByStage = (stage: string) => {
-    return leads.filter(l => l.pipelineStage === stage || (!l.pipelineStage && stage === "New"));
+  const handleDeleteConfirmed = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget._id || deleteTarget.id;
+    try {
+      await leadService.deleteLead(id);
+      removeLead(id);
+      toast('Lead removed', 'success');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not delete', 'error');
+    } finally {
+      setDeleteTarget(null);
+    }
   };
 
+  const initialDraft =
+    editing != null
+      ? {
+          name: editing.name || '',
+          email: editing.email || '',
+          company: editing.company || '',
+          value: Number(editing.value) || 0,
+          pipelineStage: (editing.pipelineStage || 'Lead') as PipelineStageId,
+        }
+      : null;
+
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 pb-24 md:pb-8">
+      <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight flex items-center gap-3 italic uppercase">
-            <Kanban className="w-8 h-8 text-orange-600" /> Lead <span className="text-orange-600">Pipeline</span>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900 flex flex-wrap items-center gap-2">
+            <Kanban className="w-7 h-7 sm:w-8 sm:h-8 text-orange-600" />
+            Pipeline
           </h1>
-          <p className="text-stone-500 font-bold text-xs uppercase tracking-[0.2em] mt-1">Velocity Tracking & Distribution</p>
+          <p className="text-xs sm:text-sm text-stone-500 mt-1 font-medium">
+            Drag cards between stages. {leads.length} lead{leads.length !== 1 ? 's' : ''} synced.
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="h-10 px-4 rounded-xl bg-white border border-stone-200 text-stone-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-stone-50 transition-all shadow-sm">
-            <Filter className="w-4 h-4" /> Filter Grid
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[220px] sm:min-w-[260px] max-w-xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name, email, company…"
+              aria-label="Filter pipeline cards"
+              className="w-full rounded-xl bg-white border border-stone-200 py-2.5 pl-9 pr-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500/25 focus:border-orange-500 shadow-sm shadow-stone-900/5"
+            />
+          </div>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setFilterOpen((v) => !v)}
+              className={`h-11 px-4 rounded-xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-sm ${
+                filterOpen ? 'border-orange-500 bg-orange-50 text-orange-800' : 'border-stone-200 bg-white text-stone-600 hover:bg-stone-50'
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              Filters
+            </button>
+            {filterOpen && (
+              <>
+                <button type="button" className="fixed inset-0 z-[50]" aria-label="Close filters" onClick={() => setFilterOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute right-0 top-full mt-2 w-[min(100vw-2rem,240px)] bg-white rounded-2xl border border-stone-200 shadow-xl z-[60] p-3 space-y-2"
+                >
+                  <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 px-2">Stages</p>
+                  {(['all', 'Lead', 'Contacted', 'Proposal', 'Won', 'Lost'] as const).map((stage) => (
+                    <button
+                      key={stage}
+                      type="button"
+                      onClick={() => {
+                        setStageScope(stage === 'all' ? 'all' : stage);
+                        setFilterOpen(false);
+                      }}
+                      className={`w-full rounded-xl px-3 py-2 text-left text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                        (stage === 'all' ? stageScope === 'all' : stageScope === stage)
+                          ? 'bg-stone-900 text-white'
+                          : 'hover:bg-stone-50 text-stone-700'
+                      }`}
+                    >
+                      {stage === 'all' ? 'All stages' : stage}
+                    </button>
+                  ))}
+                </motion.div>
+              </>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void fetchLeads()}
+            disabled={loading}
+            className="h-11 px-3 rounded-xl bg-white border border-stone-200 text-stone-600 hover:bg-stone-50 transition-colors shadow-sm disabled:opacity-60"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden />
+            <span className="sr-only">Refresh pipeline</span>
           </button>
-          <button className="h-10 px-6 rounded-xl bg-stone-900 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-stone-800 transition-all shadow-lg shadow-stone-900/20">
-            <Plus className="w-4 h-4" /> New Acquisition
+
+          <button
+            type="button"
+            onClick={openCreate}
+            className="h-11 px-5 rounded-xl bg-stone-900 text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-orange-600 shadow-lg shadow-stone-900/15 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Lead
           </button>
         </div>
       </header>
 
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 h-[600px]">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="bg-stone-100/50 rounded-2xl animate-pulse" />
+      {usingFallback ? (
+        <div className="rounded-2xl bg-amber-50 border border-amber-100 text-amber-900 px-4 py-3 text-xs flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>
+            Offline demo data is showing because the API is unreachable — set{' '}
+            <code className="font-mono text-[11px]">VITE_API_URL</code> or{' '}
+            <code className="font-mono text-[11px]">NEXT_PUBLIC_API_URL</code> if your backend runs on another host.
+          </span>
+        </div>
+      ) : null}
+
+      {error && !usingFallback ? (
+        <div className="rounded-2xl bg-red-50 border border-red-100 text-red-800 px-4 py-3 text-xs flex justify-between gap-4 items-center flex-wrap">
+          <span>{error}</span>
+          <button type="button" onClick={() => { clearError(); void fetchLeads(); }} className="text-[10px] font-black uppercase tracking-widest underline">
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {loading && leads.length === 0 ? (
+        <div className="flex gap-4 overflow-x-auto pb-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="min-w-[280px] h-[min(520px,60vh)] rounded-3xl bg-stone-100/80 animate-pulse border border-stone-100" />
           ))}
         </div>
       ) : (
-        <div className="h-[calc(100vh-240px)] flex gap-6 overflow-x-auto pb-4 custom-scrollbar">
-          {STAGES.map((stage) => {
-            const stageLeads = getLeadsByStage(stage);
-            const totalValue = stageLeads.reduce((sum, l) => sum + (l.value || 0), 0);
-
-            return (
-              <div key={stage} className="min-w-[320px] flex flex-col gap-4">
-                <div className="flex items-center justify-between px-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-stone-900">{stage}</span>
-                    <span className="bg-stone-200 text-stone-600 text-[9px] font-black px-2 py-0.5 rounded-full">{stageLeads.length}</span>
-                  </div>
-                  <span className="text-[10px] font-black text-orange-600 uppercase">₹{totalValue.toLocaleString()}</span>
-                </div>
-
-                <div className="flex-1 bg-stone-100/30 rounded-2xl p-3 border border-stone-200/50 space-y-3 overflow-y-auto custom-scrollbar">
-                  {stageLeads.map((lead) => (
-                    <motion.div
-                      layoutId={lead.id}
-                      key={lead.id}
-                      className="bg-white p-4 rounded-xl shadow-sm border border-stone-200 group hover:border-orange-500/50 transition-all cursor-grab active:cursor-grabbing"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${
-                          lead.priority === 'High' ? 'bg-red-100 text-red-600' :
-                          lead.priority === 'Medium' ? 'bg-orange-100 text-orange-600' : 'bg-stone-100 text-stone-500'
-                        }`}>
-                          {lead.priority} Priority
-                        </span>
-                        <button className="text-stone-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <h3 className="text-sm font-black text-stone-900 uppercase leading-snug group-hover:text-orange-600 transition-colors">{lead.name}</h3>
-                      <p className="text-[10px] font-bold text-stone-400 mt-0.5">{lead.company || lead.email}</p>
-
-                      <div className="mt-4 pt-4 border-t border-stone-50 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-stone-400">
-                          <Target className="w-3.5 h-3.5" />
-                          <span className="text-[10px] font-black text-stone-900">₹{lead.value?.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[9px] font-bold text-stone-400 uppercase tracking-tight">
-                          <Clock className="w-3 h-3" />
-                          {new Date(lead.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                  
-                  {stageLeads.length === 0 && (
-                    <div className="py-12 text-center">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-stone-300">No active signals</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <PipelineBoard
+          query={query}
+          stageScope={stageScope}
+          onEdit={openEdit}
+          onRequestDelete={(lead) => setDeleteTarget(lead)}
+          usingFallback={usingFallback}
+        />
       )}
+
+      <PipelineLeadModal
+        open={leadModalOpen}
+        onClose={() => closeModal()}
+        submitting={submittingModal}
+        title={editing ? 'Edit Lead' : 'New Lead'}
+        subtitle={usingFallback ? 'API offline — edits won’t persist in demo.' : undefined}
+        initial={initialDraft ?? undefined}
+        submitLabel={editing ? 'Save changes' : 'Create lead'}
+        onSubmit={handleModalSubmit}
+      />
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => void handleDeleteConfirmed()}
+        title="Remove this lead?"
+        message={`This deletes ${deleteTarget?.name || 'the lead'} and cannot be undone.`}
+        confirmLabel="Delete"
+      />
     </div>
   );
 }
