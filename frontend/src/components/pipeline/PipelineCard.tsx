@@ -4,31 +4,36 @@ import { CSS } from '@dnd-kit/utilities';
 import { Trash2, PencilLine, Target, Flame, AlertTriangle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { getLeadInsights } from '../../lib/leadIntelligence.ts';
+import { displayPriority } from '../../lib/leadPriority.ts';
 import type { PipelineStageId } from '../../stores/useCrmStore.ts';
 
 type Props = {
   lead: any;
   onEdit: (lead: any) => void;
   onRequestDelete: (lead: any) => void;
-  draggingDisabled?: boolean;
 };
 
-export function PipelineCard({ lead, onEdit, onRequestDelete, draggingDisabled }: Props) {
-  const id = lead._id || lead.id;
+export function PipelineCard({ lead, onEdit, onRequestDelete }: Props) {
+  const id = lead?._id || lead?.id;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id,
-    disabled: draggingDisabled || !id,
+    disabled: !id,
   });
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
     opacity: isDragging ? 0.35 : 1,
-    cursor: draggingDisabled ? 'default' : 'grab',
+    cursor: !id ? 'default' : 'grab',
     touchAction: 'none',
   };
 
-  const updated = lead.updatedAt || lead.createdAt;
-  const insights = getLeadInsights({ ...lead, pipelineStage: lead.pipelineStage as PipelineStageId | undefined });
+  const updated = lead?.updatedAt || lead?.createdAt;
+  const priority = displayPriority(lead || {});
+  const insights = getLeadInsights({
+    ...lead,
+    priority,
+    pipelineStage: lead?.pipelineStage as PipelineStageId | undefined,
+  });
 
   return (
     <motion.div ref={setNodeRef} layout style={style} className="relative">
@@ -49,14 +54,14 @@ export function PipelineCard({ lead, onEdit, onRequestDelete, draggingDisabled }
           <div className="flex flex-wrap items-center gap-1.5">
             <span
               className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full border ${
-                lead.priority === 'High'
+                priority === 'High'
                   ? 'bg-red-50 text-red-700 border-red-100'
-                  : lead.priority === 'Medium'
+                  : priority === 'Medium'
                     ? 'bg-orange-50 text-orange-700 border-orange-100'
                     : 'bg-stone-50 text-stone-600 border-stone-100'
               }`}
             >
-              {(lead.priority || 'Medium')} · Score {insights.score}
+              {priority} · Score {insights.score}
             </span>
             <span
               className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full flex items-center gap-1 border ${

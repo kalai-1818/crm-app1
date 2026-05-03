@@ -25,6 +25,7 @@ import { EmptyState } from "../components/ui/EmptyState.tsx";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog.tsx";
 import { LeadTimeline } from "../components/LeadTimeline.tsx";
 import { useCrmStore } from "../stores/useCrmStore.ts";
+import { displayPriority } from "../lib/leadPriority.ts";
 
 const STATUS_COLORS: any = {
   'New': 'bg-blue-50 text-blue-700 border-blue-100',
@@ -126,7 +127,7 @@ export default function LeadsPage() {
       `"${String(l.status || '')}"`,
       `"${String(l.pipelineStage || '')}"`,
       String(l.value ?? ''),
-      `"${String(l.priority || '')}"`,
+      `"${displayPriority(l)}"`,
     ].join(","));
     const blob = new Blob([[headers.join(","), ...rows].join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -316,8 +317,8 @@ export default function LeadsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${PRIORITY_COLORS[lead.priority || 'Medium']}`}>
-                        {lead.priority || 'Medium'}
+                      <span className={`px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${PRIORITY_COLORS[displayPriority(lead)]}`}>
+                        {displayPriority(lead)}
                       </span>
                     </td>
                     <td className="px-6 py-4">

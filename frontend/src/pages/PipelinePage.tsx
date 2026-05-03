@@ -1,26 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Kanban,
-  Plus,
-  Search,
-  RefreshCw,
-  SlidersHorizontal,
-  AlertCircle,
-} from 'lucide-react';
+import { Kanban, Plus, Search, RefreshCw, SlidersHorizontal, Target } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PipelineBoard } from '../components/pipeline/PipelineBoard.tsx';
 import { PipelineLeadModal, type DraftLead } from '../components/pipeline/PipelineLeadModal.tsx';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog.tsx';
+import { EmptyState } from '../components/ui/EmptyState.tsx';
 import { useToast } from '../components/ui/Toast.tsx';
 import { useCrmStore, type PipelineStageId } from '../stores/useCrmStore.ts';
 import { leadService } from '../services/leadService.ts';
-
 export default function PipelinePage() {
   const fetchLeads = useCrmStore((s) => s.fetchLeads);
   const leads = useCrmStore((s) => s.leads);
   const loading = useCrmStore((s) => s.loading);
   const error = useCrmStore((s) => s.error);
-  const usingFallback = useCrmStore((s) => s.usingFallback);
   const clearError = useCrmStore((s) => s.clearError);
   const prependLead = useCrmStore((s) => s.prependLead);
   const replaceLead = useCrmStore((s) => s.replaceLead);
@@ -85,6 +77,7 @@ export default function PipelinePage() {
       closeModal();
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not save lead', 'error');
+      console.error('[PipelinePage] save lead failed', e);
     } finally {
       setSubmittingModal(false);
     }
@@ -99,6 +92,7 @@ export default function PipelinePage() {
       toast('Lead removed', 'success');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not delete', 'error');
+      console.error('[PipelinePage] delete failed', e);
     } finally {
       setDeleteTarget(null);
     }
@@ -115,6 +109,9 @@ export default function PipelinePage() {
         }
       : null;
 
+  const showEmptyError = !!error && !loading && leads.length === 0;
+  const loadedEmpty = !error && !loading && leads.length === 0;
+
   return (
     <div className="space-y-6 pb-24 md:pb-8">
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -124,7 +121,7 @@ export default function PipelinePage() {
             Pipeline
           </h1>
           <p className="text-xs sm:text-sm text-stone-500 mt-1 font-medium">
-            Drag cards between stages. {leads.length} lead{leads.length !== 1 ? 's' : ''} synced.
+            {loading ? 'Loading…' : `${(leads ?? []).length} lead${(leads ?? []).length !== 1 ? 's' : ''} loaded`}
           </p>
         </div>
 
@@ -203,39 +200,67 @@ export default function PipelinePage() {
         </div>
       </header>
 
-      {usingFallback ? (
-        <div className="rounded-2xl bg-amber-50 border border-amber-100 text-amber-900 px-4 py-3 text-xs flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>
-            Offline demo data is showing because the API is unreachable — set{' '}
-            <code className="font-mono text-[11px]">VITE_API_URL</code> or{' '}
-            <code className="font-mono text-[11px]">NEXT_PUBLIC_API_URL</code> if your backend runs on another host.
-          </span>
-        </div>
-      ) : null}
-
-      {error && !usingFallback ? (
-        <div className="rounded-2xl bg-red-50 border border-red-100 text-red-800 px-4 py-3 text-xs flex justify-between gap-4 items-center flex-wrap">
-          <span>{error}</span>
-          <button type="button" onClick={() => { clearError(); void fetchLeads(); }} className="text-[10px] font-black uppercase tracking-widest underline">
+      {error ? (
+        <div className="rounded-2xl bg-red-50 border border-red-100 text-red-800 px-4 py-3 text-xs flex justify-between gap-4 items-start flex-wrap">
+          <span className="leading-relaxed">{error}</span>
+          <button
+            type="button"
+            onClick={() => {
+              clearError();
+              void fetchLeads();
+            }}
+            className="text-[10px] font-black uppercase tracking-widest underline shrink-0"
+          >
             Retry
           </button>
         </div>
       ) : null}
 
       {loading && leads.length === 0 ? (
-        <div className="flex gap-4 overflow-x-auto pb-3">
+        <div className="flex gap-4 overflow-x-auto pb-3 overscroll-x-contain">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="min-w-[280px] h-[min(520px,60vh)] rounded-3xl bg-stone-100/80 animate-pulse border border-stone-100" />
           ))}
         </div>
+      ) : showEmptyError ? (
+        <EmptyState
+          title="Could not reach the API"
+          description={error || 'Configure VITE_API_URL or NEXT_PUBLIC_API_URL on Vercel. Check Railway is online and CORS allows your Vercel domain.'}
+          icon={<Target className="text-orange-400 w-8 h-8" />}
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                clearError();
+                void fetchLeads();
+              }}
+              className="bg-stone-900 text-white px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-orange-600 transition-colors shadow-lg"
+            >
+              Retry connection
+            </button>
+          }
+        />
+      ) : loadedEmpty ? (
+        <EmptyState
+          title="No leads yet"
+          description="Add a lead from the Pipeline or Leads page to populate your board."
+          icon={<Kanban className="text-orange-400 w-8 h-8" />}
+          action={
+            <button
+              type="button"
+              onClick={openCreate}
+              className="bg-stone-900 text-white px-8 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-orange-600 transition-colors shadow-lg"
+            >
+              Add Lead
+            </button>
+          }
+        />
       ) : (
         <PipelineBoard
           query={query}
           stageScope={stageScope}
           onEdit={openEdit}
           onRequestDelete={(lead) => setDeleteTarget(lead)}
-          usingFallback={usingFallback}
         />
       )}
 
@@ -244,7 +269,6 @@ export default function PipelinePage() {
         onClose={() => closeModal()}
         submitting={submittingModal}
         title={editing ? 'Edit Lead' : 'New Lead'}
-        subtitle={usingFallback ? 'API offline — edits won’t persist in demo.' : undefined}
         initial={initialDraft ?? undefined}
         submitLabel={editing ? 'Save changes' : 'Create lead'}
         onSubmit={handleModalSubmit}

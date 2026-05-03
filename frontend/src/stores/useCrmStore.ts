@@ -4,40 +4,11 @@ import { leadService } from '../services/leadService.ts';
 export const PIPELINE_STAGES = ['Lead', 'Contacted', 'Proposal', 'Won', 'Lost'] as const;
 export type PipelineStageId = (typeof PIPELINE_STAGES)[number];
 
-const DEMO_LEADS: any[] = [
-  {
-    _id: 'demo-1',
-    id: 'demo-1',
-    name: 'Alex Rivera',
-    email: 'alex@demo.io',
-    company: 'Rivera Logistics',
-    status: 'Contacted',
-    pipelineStage: 'Proposal' as PipelineStageId,
-    value: 8400,
-    priority: 'High',
-    updatedAt: new Date().toISOString(),
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    _id: 'demo-2',
-    id: 'demo-2',
-    name: 'Priya Sharma',
-    email: 'priya@demo.co',
-    company: 'Sharma Foods',
-    status: 'New',
-    pipelineStage: 'Lead' as PipelineStageId,
-    value: 2200,
-    priority: 'Medium',
-    updatedAt: new Date().toISOString(),
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
-
 type CrmStore = {
+  /** All leads; empty when load failed or no data */
   leads: any[];
   loading: boolean;
   error: string | null;
-  usingFallback: boolean;
   fetchLeads: () => Promise<void>;
   setLeadsPatch: (id: string, patch: Partial<any>) => void;
   replaceLead: (lead: any) => void;
@@ -46,11 +17,10 @@ type CrmStore = {
   clearError: () => void;
 };
 
-export const useCrmStore = create<CrmStore>((set, get) => ({
+export const useCrmStore = create<CrmStore>((set) => ({
   leads: [],
   loading: false,
   error: null,
-  usingFallback: false,
 
   clearError: () => set({ error: null }),
 
@@ -62,15 +32,15 @@ export const useCrmStore = create<CrmStore>((set, get) => ({
       set({
         leads: list.map(normalizeLeadId),
         loading: false,
-        usingFallback: false,
       });
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to load leads';
+      const message =
+        e instanceof Error ? e.message : 'Unable to load leads from the API.';
+      console.error('[useCrmStore] fetchLeads failed', message, e);
       set({
         error: message,
-        leads: DEMO_LEADS.map(normalizeLeadId),
+        leads: [],
         loading: false,
-        usingFallback: true,
       });
     }
   },
@@ -88,10 +58,10 @@ export const useCrmStore = create<CrmStore>((set, get) => ({
       const id = lead._id || lead.id;
       const next = normalizeLeadId(lead);
       const idx = s.leads.findIndex((l) => (l._id || l.id) === id);
-      if (idx === -1) return { leads: [next, ...s.leads] };
+      if (idx === -1) return { leads: [next, ...s.leads], error: null };
       const copy = [...s.leads];
       copy[idx] = next;
-      return { leads: copy };
+      return { leads: copy, error: null };
     }),
 
   removeLead: (id) =>
@@ -102,6 +72,7 @@ export const useCrmStore = create<CrmStore>((set, get) => ({
   prependLead: (lead) =>
     set((s) => ({
       leads: [normalizeLeadId(lead), ...s.leads.filter((l) => (l._id || l.id) !== (lead._id || lead.id))],
+      error: null,
     })),
 }));
 
