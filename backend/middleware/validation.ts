@@ -1,43 +1,36 @@
 import Joi from 'joi';
 import { Request, Response, NextFunction } from 'express';
 
-export const validate = (schema: Joi.ObjectSchema) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const { error } = schema.validate(req.body, { abortEarly: false });
-    if (error) {
-      const message = error.details.map(i => i.message).join(', ');
-      return res.status(400).json({ message });
-    }
-    next();
-  };
+export const validateLead = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    name: Joi.string().max(100).required(),
+    company: Joi.string().max(100).required(),
+    email: Joi.string().email().required(),
+    value: Joi.number().min(0).required(),
+    status: Joi.string()
+      .valid('New', 'Contacted', 'Converted', 'Rejected')
+      .default('New'),
+  });
+
+  const { error } = schema.validate(req.body, { allowUnknown: true });
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+  next();
 };
 
-export const authSchemas = {
-  register: Joi.object({
-    name: Joi.string().required().min(2).max(50),
-    email: Joi.string().email().required(),
-    password: Joi.string().required().min(6).max(100)
-  }),
-  login: Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().required()
-  })
-};
+export const validateTask = (req: Request, res: Response, next: NextFunction) => {
+  const schema = Joi.object({
+    title: Joi.string().max(200).required(),
+    description: Joi.string().max(1000).optional(),
+    dueDate: Joi.string().optional(),
+    priority: Joi.string().valid('High', 'Medium', 'Low').default('Medium'),
+    status: Joi.string().valid('Todo', 'In Progress', 'Done').default('Todo'),
+  });
 
-export const leadSchemas = {
-  create: Joi.object({
-    name: Joi.string().required(),
-    email: Joi.string().email().required(),
-    company: Joi.string().allow(''),
-    status: Joi.string().valid('New', 'Contacted', 'Qualified', 'Lost', 'Closed')
-  })
-};
-
-export const taskSchemas = {
-  create: Joi.object({
-    title: Joi.string().required(),
-    description: Joi.string().allow(''),
-    priority: Joi.string().valid('Low', 'Medium', 'High'),
-    status: Joi.string().valid('To Do', 'In Progress', 'In Review', 'Done')
-  })
+  const { error } = schema.validate(req.body, { allowUnknown: true });
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+  next();
 };

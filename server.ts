@@ -17,6 +17,7 @@ import proposalRoutes from "./backend/routes/proposals.ts";
 import projectRoutes from "./backend/routes/projects.ts";
 import analyticsRoutes from "./backend/routes/analytics.ts";
 import notificationRoutes from "./backend/routes/notifications.ts";
+import aiRoutes from "./backend/routes/ai.ts";
 import searchRoutes from "./backend/routes/search.ts";
 
 async function startServer() {
@@ -64,6 +65,7 @@ async function startServer() {
   app.use("/api/projects", projectRoutes);
   app.use("/api/analytics", analyticsRoutes);
   app.use("/api/notifications", notificationRoutes);
+  app.use("/api/ai", aiRoutes);
   app.use("/api/search", searchRoutes);
 
   // Dev: Vite middleware | Prod: serve built frontend

@@ -8,8 +8,21 @@ import { calculatePriority, getAutoAssignee, logActivity } from '../utils/intell
 
 export const getLeads = async (req: any, res: Response) => {
   try {
-    const leads = await Lead.find({ owner: req.user.id });
-    res.json(leads);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const allLeads = await Lead.find({ owner: req.user.id });
+
+    const total = allLeads.length;
+    const start = (page - 1) * limit;
+    const paginatedLeads = allLeads.slice(start, start + limit);
+
+    res.json({
+      leads: paginatedLeads,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -48,7 +61,7 @@ export const createLead = async (req: any, res: Response) => {
       leadId: lead.id,
       services: services || [],
       pricing: {
-        breakdown: (services || []).map((s: string) => ({ name: s, price: 0 })), // Placeholder breakdown
+        breakdown: (services || []).map((s: string) => ({ name: s, price: 0 })),
         total: value || 0
       },
       status: 'Draft'
@@ -89,7 +102,6 @@ export const updateLead = async (req: any, res: Response) => {
     if (req.body.status && req.body.status !== oldLead.status) {
       changes.status = { from: oldLead.status, to: req.body.status };
       
-      // Update pipeline stage based on status
       if (req.body.status === 'Converted') req.body.pipelineStage = 'Converted';
       else if (req.body.status === 'Contacted') req.body.pipelineStage = 'Qualified';
     }
@@ -107,7 +119,6 @@ export const updateLead = async (req: any, res: Response) => {
       { new: true, runValidators: true }
     ) as any;
 
-    // AUTOMATIC PROJECT CREATION ON CONVERSION
     if (changes.status?.to === 'Converted') {
       await Project.create({
         name: `Project: ${lead.company || lead.name}`,
@@ -124,7 +135,6 @@ export const updateLead = async (req: any, res: Response) => {
       });
     }
 
-    // Activity Logging
     if (changes.status) {
       const type = changes.status.to === 'Converted' ? 'CONVERTED' : 
                    changes.status.to === 'Rejected' ? 'REJECTED' : 'STATUS_UPDATED';
