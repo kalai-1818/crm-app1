@@ -22,7 +22,7 @@ import searchRoutes from "./backend/routes/search.ts";
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 3000;
   const isProd = process.env.NODE_ENV === "production";
 
   // Security

@@ -46,7 +46,7 @@ export const updateTask = async (req: any, res: Response) => {
       recipient: req.user.id,
       type: 'TASK_UPDATED' as const,
       title: 'Task Synchronized',
-      message: `Task "${(task as any).title}" has been updated in the nexus.`,
+      message: `Task "${(task as any).title}" has been updated in the nibble.`,
       link: '/tasks'
     });
 
