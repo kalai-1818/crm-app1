@@ -7,8 +7,17 @@
 }
 
 @layer base {
+  html {
+    overflow-x: clip;
+  }
   body {
     @apply font-sans;
+    overflow-x: clip;
+    max-width: 100vw;
+  }
+  #root {
+    overflow-x: clip;
+    max-width: 100vw;
   }
 }
 

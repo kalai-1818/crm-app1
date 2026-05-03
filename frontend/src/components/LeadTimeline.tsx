@@ -45,7 +45,7 @@ export function LeadTimeline({ activities }: { activities: Activity[] }) {
     <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:-translate-x-px before:bg-stone-100">
       {list.map((activity, index) => (
         <motion.div 
-          key={activity._id}
+          key={activity._id || `activity-${index}`}
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: index * 0.1 }}

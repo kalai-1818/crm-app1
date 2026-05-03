@@ -147,6 +147,7 @@ return () => {
   ];
 
   const handleLogout = async () => {
+    setMobileNavOpen(false);
     await authService.logout();
     navigate("/login");
   };
