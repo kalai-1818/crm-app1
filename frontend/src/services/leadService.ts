@@ -4,8 +4,10 @@ const API_URL = '/api/leads';
 
 export const leadService = {
   async getLeads() {
-    return apiClient(API_URL);
-  },
+  const data = await apiClient(API_URL);
+  // Handle both paginated { leads: [] } and plain array responses
+  return Array.isArray(data) ? data : (data.leads || []);
+},
 
   async createLead(leadData: any) {
     return apiClient(API_URL, {

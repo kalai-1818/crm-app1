@@ -95,7 +95,7 @@ export default function LeadsPage() {
       setIsLoading(true);
       setError(null);
       const data = await leadService.getLeads();
-setLeads(Array.isArray(data) ? data : data.leads || []);
+      setLeads(data);
     } catch (err: any) {
       setError(err.message || "Failed to load leads");
       console.error(err);
